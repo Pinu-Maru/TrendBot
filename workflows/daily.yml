@@ -30,11 +30,7 @@ jobs:
           pip install pandas requests
 
       - name: Fetch news
-        env:
-          QUERIES: "物価 食料 日本|米 小麦 価格|コンビニ 新商品"
-          MAX_ITEMS_PER_QUERY: "60"
-          SLEEP_BETWEEN_QUERIES: "1.5"
-          HTTP_TIMEOUT: "20"
+        
         run: |
           python .github/scripts/fetch_news.py
 
