@@ -1,0 +1,52 @@
+name: daily-news
+
+on:
+  schedule:
+    - cron: "10 22 * * *"  # UTC 22:10 = JST 07:10
+  workflow_dispatch:
+
+concurrency:
+  group: daily-news
+  cancel-in-progress: false
+
+permissions:
+  contents: write  # コミットするなら必要
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas requests
+
+      - name: Fetch news
+        env:
+          QUERIES: "物価 食料 日本|米 小麦 価格|コンビニ 新商品"
+          MAX_ITEMS_PER_QUERY: "60"
+          SLEEP_BETWEEN_QUERIES: "1.5"
+          HTTP_TIMEOUT: "20"
+        run: |
+          python .github/scripts/fetch_news.py
+
+      - name: Commit changes
+        run: |
+          git status --porcelain
+          if [ -n "$(git status --porcelain)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/*.csv
+            git commit -m "daily news: $(date -u +'%Y-%m-%d')"
+            git push
+          else
+            echo "No changes to commit."
+          fi
